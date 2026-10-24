@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课表签到｜云计算01班</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230F766E'/%3E%3Cpath d='M5 13l4 4L19 7' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="tabs">
+  <button class="tab active" data-tab="timetable">课表</button>
+  <button class="tab" data-tab="sign">签到</button>
+  <button class="tab" data-tab="member">名单</button>
+  <button class="tab" data-tab="stats">统计</button>
+</div>
+
+<main>
+  <!-- 课表 -->
+  <section id="p-timetable" class="page active">
+    <div class="head">
+      <h2>冬季作息课表</h2>
+      <span class="sp" style="font-size:12.5px;color:var(--ink2)">10.1–次年4.30</span>
+      <button class="btn sm" id="btnReset">恢复示例</button>
+      <button class="btn sm" id="btnAddCourse">+ 添加课程</button>
+    </div>
+    <div class="twrap">
+      <table>
+        <colgroup><col style="width:64px"></colgroup>
+        <thead><tr id="ttHead"></tr></thead>
+        <tbody id="ttBody"></tbody>
+      </table>
+    </div>
+    <p class="note">提示：点击课表里的课程色块可编辑该课程。</p>
+  </section>
+
+  <!-- 签到 -->
+  <section id="p-sign" class="page">
+    <div class="sign-top">
+      <div class="pick">
+        <div class="field"><label for="signCourse">签到课程</label><select id="signCourse"></select></div>
+        <div class="field"><label for="signDate">日期</label><input type="date" id="signDate"></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat total"><div class="v" id="stTotal">0</div><div class="l">总人数</div></div>
+        <div class="stat attend"><div class="v" id="stAttend">0</div><div class="l">出勤</div></div>
+        <div class="stat leave"><div class="v" id="stLeave">0</div><div class="l">请假</div></div>
+        <div class="stat absent"><div class="v" id="stAbsent">0</div><div class="l">缺勤</div></div>
+        <div class="stat none"><div class="v" id="stNone">0</div><div class="l">未签</div></div>
+      </div>
+      <div class="tools">
+        <button class="btn sm" id="btnAll">全部出勤</button>
+        <button class="btn sm ghost" id="btnClear">清除本节</button>
+        <div class="filters" id="filters">
+          <button class="fc" data-f="all" data-on="1">全部</button>
+          <button class="fc" data-f="none" data-on="0">未签到</button>
+          <button class="fc" data-f="attend" data-on="0">出勤</button>
+          <button class="fc" data-f="leave" data-on="0">请假</button>
+          <button class="fc" data-f="absent" data-on="0">缺勤</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#15803D"></i>出勤</span>
+        <span><i style="background:#C2600F"></i>请假</span>
+        <span><i style="background:#C2372F"></i>缺勤</span>
+        <span><i style="background:#CBD5DF"></i>未签</span>
+      </div>
+      <ul class="slist" id="signList"></ul>
+    </div>
+    <p class="note">点一下学生那一行就切换状态：未签到 → 出勤 → 请假 → 缺勤 → 再点回未签到。谁来了谁没来，一眼看清。</p>
+  </section>
+
+  <!-- 名单 -->
+  <section id="p-member" class="page">
+    <div class="head">
+      <h2>班级名单</h2>
+      <span class="sp" id="memberCount" style="font-size:13px;color:var(--ink2)"></span>
+      <button class="btn sm" id="btnAddStudent">+ 新增学生</button>
+    </div>
+    <ul class="mlist" id="memberList"></ul>
+  </section>
+
+  <!-- 统计 -->
+  <section id="p-stats" class="page">
+    <div class="head">
+      <h2>出勤统计</h2>
+      <span class="sp" id="statSessions" style="font-size:13px;color:var(--ink2)"></span>
+      <button class="btn sm" id="btnExport">导出 CSV</button>
+    </div>
+    <div class="sign-top">
+      <div class="pick">
+        <div class="field"><label for="statFrom">起始日期</label><input type="date" id="statFrom"></div>
+        <div class="field"><label for="statTo">结束日期</label><input type="date" id="statTo"></div>
+        <div class="field"><label for="statCourse">课程</label><select id="statCourse"><option value="">全部课程</option></select></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat total"><div class="v" id="overallRate">0%</div><div class="l">总出勤率</div></div>
+        <div class="stat attend"><div class="v" id="overallAttend">0</div><div class="l">出勤人次</div></div>
+        <div class="stat leave"><div class="v" id="overallLeave">0</div><div class="l">请假人次</div></div>
+        <div class="stat absent"><div class="v" id="overallAbsent">0</div><div class="l">缺勤人次</div></div>
+        <div class="stat none"><div class="v" id="overallSessions">0</div><div class="l">签到场次</div></div>
+      </div>
+      <p class="note">总出勤率 = 出勤人次 ÷（出勤+请假+缺勤 总人次）。下方为每位同学在区间内的出勤率排名。</p>
+      <ul class="slist" id="statRank"></ul>
+    </div>
+  </section>
+</main>
+
+<!-- modal -->
+<div class="modal" id="modal">
+  <div class="mbox">
+    <h3 id="mTitle"></h3>
+    <div id="mBody"></div>
+    <div class="mbtns">
+      <button class="cancel" id="mCancel">取消</button>
+      <button class="ok" id="mOk">保存</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

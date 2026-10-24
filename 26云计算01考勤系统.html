@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课表签到｜云计算01班</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230F766E'/%3E%3Cpath d='M5 13l4 4L19 7' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --ink:#182230;--ink2:#5B6B7B;--line:#E3E9EF;--bg:#F2F5F7;--surface:#fff;
+  --primary:#0F766E;--primary-d:#0B5F59;--primary-soft:#DCF2EE;
+  --attend:#15803D;--attend-bg:#E3F3E8;--attend-line:#BCE3C8;
+  --leave:#C2600F;--leave-bg:#FCEEDD;--leave-line:#F0D6B3;
+  --absent:#C2372F;--absent-bg:#FBE5E3;--absent-line:#F0C4C1;
+  --none:#8B9AA8;--none-bg:#F1F4F7;--none-line:#DDE4EA;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;color:var(--ink);font-size:16px}
+[hidden]{display:none!important}
+
+/* tabs */
+.tabs{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line);display:flex}
+.tab{flex:1;padding:14px 0;text-align:center;font-size:16px;font-weight:600;color:var(--ink2);border-bottom:3px solid transparent}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+main{max-width:860px;margin:0 auto;padding:14px 14px 90px}
+.page{display:none}.page.active{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+.head{display:flex;align-items:center;gap:10px;margin:4px 0 12px;flex-wrap:wrap}
+.head h2{font-size:18px;font-weight:700}
+.head .sp{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:42px;min-height:44px;padding:0 16px;border-radius:10px;font-size:15px;font-weight:600;background:var(--primary);color:#fff}
+.btn:hover{background:var(--primary-d)}
+.btn.ghost{background:#E9EEF2;color:var(--ink)}
+.btn.sm{height:34px;min-height:34px;padding:0 12px;font-size:14px}
+
+/* 课表 */
+.twrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:max(920px,100%);table-layout:fixed}
+th,td{border:1px solid var(--line);vertical-align:top;text-align:center;font-size:13px}
+thead th{background:#E9EEF2;padding:8px 3px;font-weight:700;font-size:13px}
+td.time{width:64px;background:#F4F6F8;font-size:12px;color:var(--ink2);padding:6px 2px;white-space:nowrap}
+td.time b{display:block;color:var(--ink);font-size:13px}
+td.cell{min-width:112px;height:66px;padding:4px}
+.course{border-radius:8px;padding:6px;height:100%;display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.course .nm{font-size:13px;font-weight:700;line-height:1.3}
+.course .rm{font-size:11px;opacity:.75}
+
+/* 签到 */
+.sign-top{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(16,30,45,.05)}
+.pick{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.field{flex:1;min-width:160px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+.field select,.field input{width:100%;height:46px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);-webkit-appearance:none;appearance:none}
+.field select:focus,.field input:focus{outline:2px solid var(--primary);outline-offset:-1px}
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center}
+.stat .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat .l{font-size:11.5px;color:var(--ink2);margin-top:2px}
+.stat.attend .v{color:var(--attend)}.stat.leave .v{color:var(--leave)}.stat.absent .v{color:var(--absent)}.stat.none .v{color:var(--none)}.stat.total .v{color:var(--ink)}
+.tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.fc{padding:7px 12px;border-radius:999px;font-size:13.5px;font-weight:600;background:#E9EEF2;color:var(--ink2);min-height:38px;display:inline-flex;align-items:center}
+.fc[data-on="1"]{background:var(--ink);color:#fff}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin:2px 0 10px}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block;vertical-align:-2px;margin-right:3px}
+.slist{list-style:none;display:grid;gap:8px}
+.slist li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid;min-height:56px;cursor:pointer;user-select:none;transition:transform .08s}
+.slist li:active{transform:scale(.99)}
+.slist li.attend{background:var(--attend-bg);border-color:var(--attend-line)}
+.slist li.leave{background:var(--leave-bg);border-color:var(--leave-line)}
+.slist li.absent{background:var(--absent-bg);border-color:var(--absent-line)}
+.slist li.none{background:var(--none-bg);border-color:var(--none-line)}
+.av{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--primary-soft);color:var(--primary-d)}
+.slist li.none .av{background:#DDE4EA;color:#6B7B8A}
+.sname{font-size:15px;font-weight:600;flex:1;min-width:0}
+.stag{font-size:13px;font-weight:600;padding:5px 10px;border-radius:999px;flex:none;white-space:nowrap}
+li.attend .stag{background:var(--attend);color:#fff}
+li.leave .stag{background:var(--leave);color:#fff}
+li.absent .stag{background:var(--absent);color:#fff}
+li.none .stag{background:#CBD5DF;color:#4A5A68}
+.empty{text-align:center;padding:30px;color:var(--ink2);border:1px dashed var(--line);border-radius:12px;background:var(--surface)}
+
+/* 名单 */
+.mlist{list-style:none;display:grid;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}
+.mlist li{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line)}
+.mlist li:last-child{border-bottom:none}
+.mlist .no{width:30px;text-align:center;color:var(--ink2);font-size:13px;font-variant-numeric:tabular-nums}
+.mlist .nm{flex:1;font-size:15px}
+.del{width:38px;height:38px;border-radius:8px;color:var(--ink2)}
+.del:hover{background:#FBE5E3;color:var(--absent)}
+.del svg{width:18px;height:18px}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(15,26,35,.45);z-index:60;display:none;place-items:center;padding:18px}
+.modal.show{display:grid}
+.mbox{width:100%;max-width:420px;background:var(--surface);border-radius:16px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.mbox h3{font-size:17px;font-weight:700;margin-bottom:14px}
+.mbox .fg{margin-bottom:12px}
+.mbox label{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+.mbox input,.mbox select{width:100%;height:46px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.mbox input:focus,.mbox select:focus{outline:2px solid var(--primary);outline-offset:-1px}
+.mbox .row{display:flex;gap:10px}
+.mbox .row>*{flex:1}
+.mbtns{display:flex;gap:10px;margin-top:8px}
+.mbtns button{flex:1;height:44px;border-radius:10px;font-size:15px;font-weight:600}
+.mbtns .ok{background:var(--primary);color:#fff}
+.mbtns .cancel{background:#E9EEF2;color:var(--ink)}
+.note{font-size:12.5px;color:var(--ink2);margin-top:10px}
+@media(max-width:640px){.btn.sm{min-height:44px;height:44px}.note{font-size:13px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="tabs">
+  <button class="tab active" data-tab="timetable">课表</button>
+  <button class="tab" data-tab="sign">签到</button>
+  <button class="tab" data-tab="member">名单</button>
+</div>
+
+<main>
+  <!-- 课表 -->
+  <section id="p-timetable" class="page active">
+    <div class="head">
+      <h2>冬季作息课表</h2>
+      <span class="sp" style="font-size:12.5px;color:var(--ink2)">10.1–次年4.30</span>
+      <button class="btn sm" id="btnReset">恢复示例</button>
+      <button class="btn sm" id="btnAddCourse">+ 添加课程</button>
+    </div>
+    <div class="twrap">
+      <table>
+        <colgroup><col style="width:64px"></colgroup>
+        <thead><tr id="ttHead"></tr></thead>
+        <tbody id="ttBody"></tbody>
+      </table>
+    </div>
+    <p class="note">提示：点击课表里的课程色块可编辑该课程。</p>
+  </section>
+
+  <!-- 签到 -->
+  <section id="p-sign" class="page">
+    <div class="sign-top">
+      <div class="pick">
+        <div class="field"><label for="signCourse">签到课程</label><select id="signCourse"></select></div>
+        <div class="field"><label for="signDate">日期</label><input type="date" id="signDate"></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat total"><div class="v" id="stTotal">0</div><div class="l">总人数</div></div>
+        <div class="stat attend"><div class="v" id="stAttend">0</div><div class="l">出勤</div></div>
+        <div class="stat leave"><div class="v" id="stLeave">0</div><div class="l">请假</div></div>
+        <div class="stat absent"><div class="v" id="stAbsent">0</div><div class="l">缺勤</div></div>
+        <div class="stat none"><div class="v" id="stNone">0</div><div class="l">未签</div></div>
+      </div>
+      <div class="tools">
+        <button class="btn sm" id="btnAll">全部出勤</button>
+        <button class="btn sm ghost" id="btnClear">清除本节</button>
+        <div class="filters" id="filters">
+          <button class="fc" data-f="all" data-on="1">全部</button>
+          <button class="fc" data-f="none" data-on="0">未签到</button>
+          <button class="fc" data-f="attend" data-on="0">出勤</button>
+          <button class="fc" data-f="leave" data-on="0">请假</button>
+          <button class="fc" data-f="absent" data-on="0">缺勤</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#15803D"></i>出勤</span>
+        <span><i style="background:#C2600F"></i>请假</span>
+        <span><i style="background:#C2372F"></i>缺勤</span>
+        <span><i style="background:#CBD5DF"></i>未签到</span>
+      </div>
+      <ul class="slist" id="signList"></ul>
+    </div>
+    <p class="note">点一下学生那一行就切换状态：未签到 → 出勤 → 请假 → 缺勤 → 再点回未签到。谁来了谁没来，一眼看清。</p>
+  </section>
+
+  <!-- 名单 -->
+  <section id="p-member" class="page">
+    <div class="head">
+      <h2>班级名单</h2>
+      <span class="sp" id="memberCount" style="font-size:13px;color:var(--ink2)"></span>
+      <button class="btn sm" id="btnAddStudent">+ 新增学生</button>
+    </div>
+    <ul class="mlist" id="memberList"></ul>
+  </section>
+</main>
+
+<!-- modal -->
+<div class="modal" id="modal">
+  <div class="mbox">
+    <h3 id="mTitle"></h3>
+    <div id="mBody"></div>
+    <div class="mbtns">
+      <button class="cancel" id="mCancel">取消</button>
+      <button class="ok" id="mOk">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ===== 冬季作息时间 ===== */
+var PERIODS=[
+  {id:1,s:'08:20',e:'09:05'},{id:2,s:'09:10',e:'09:55'},{id:3,s:'10:15',e:'11:00'},{id:4,s:'11:05',e:'11:50'},
+  {id:5,s:'13:30',e:'14:15'},{id:6,s:'14:20',e:'15:05'},{id:7,s:'15:25',e:'16:10'},{id:8,s:'16:15',e:'17:00'},
+  {id:9,s:'18:00',e:'18:40'},{id:10,s:'18:40',e:'19:20'},{id:11,s:'19:40',e:'20:20'},{id:12,s:'20:20',e:'21:00'}
+];
+var DAYS=['周一','周二','周三','周四','周五','周六','周日'];
+var COLORS=['#0F766E','#7E57C2','#D97706','#DB2777','#2563EB','#16A34A','#C2372F','#0EA5E9'];
+var KEY='kbcloud01_v1';
+var ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return ESC[c];});}
+function fmtDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function $id(x){return document.getElementById(x);}
+
+/* ===== 默认数据 ===== */
+function sampleCourses(){
+  return [
+    {name:'Linux操作系统应用(理论)',room:'行知楼210',w:0,s:1,e:2,c:0},
+    {name:'计算机网络基础(理论)',room:'行知楼207',w:0,s:7,e:8,c:4},
+    {name:'中华优秀传统文化(理论)',room:'炎培楼313',w:1,s:1,e:2,c:1},
+    {name:'思想道德与法治(一)(理论)',room:'行知楼107',w:1,s:5,e:6,c:3},
+    {name:'高等数学(理论)',room:'炎培楼115',w:1,s:7,e:8,c:6},
+    {name:'网页设计与制作基础(理论)',room:'行知楼207',w:2,s:3,e:4,c:2},
+    {name:'高等数学(理论)',room:'炎培楼115',w:2,s:7,e:8,c:6},
+    {name:'大学英语(理论)',room:'炎培楼T301',w:2,s:9,e:10,c:5},
+    {name:'大学英语(理论)',room:'炎培楼T301',w:3,s:1,e:2,c:5},
+    {name:'信息技术(理论)',room:'实训楼305',w:3,s:5,e:6,c:4},
+    {name:'云计算导论(理论)',room:'行知楼209',w:3,s:7,e:8,c:0},
+    {name:'网页设计与制作基础(理论)',room:'行知楼209',w:4,s:3,e:4,c:2},
+    {name:'体育与健康(理论)',room:'田径场',w:4,s:7,e:8,c:7}
+  ];
+}
+function sampleStudents(){
+  return ['杨尧辉','任年旺','徐庚艳','常迎奥','伍贤婷','黄梓宸','李婧','唐世涛','赵婷','张圆圆',
+  '杨龙杰','童永兴','舒成鑫','彭振旺','陈浠','田武','宋鹏菲','杨银','黄依娜','任雅琴',
+  '雷紫星','谭子奥','刘奥','朱梓浩','王睿彬','符天顺','唐樟松','全身富','李思涵','舒铭宇',
+  '莫定瑞','徐睿','熊文康','刘阳澜','杨志能','毛佳相','王艺','李铭','龙双全','黄佳依',
+  '孙拓','李细月','段玲','陈玄宇','谢镇宇'];
+}
+
+/* ===== 状态 ===== */
+var state;
+function load(){
+  try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);if(d&&Array.isArray(d.courses)&&Array.isArray(d.students)){if(!d.records)d.records={};return d;}}}catch(e){}
+  return {courses:sampleCourses(),students:sampleStudents(),records:{}};
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function nowKey(){
+  var c=$id('signCourse').value,d=$id('signDate').value||fmtDate(new Date());
+  return c+'|'+d;
+}
+
+/* ===== 课表 ===== */
+function renderTimetable(){
+  $id('ttHead').innerHTML='<th>节次<br>时间</th>'+DAYS.map(function(d){return '<th>'+d+'</th>';}).join('');
+  var body='',covered=[0,0,0,0,0,0,0];
+  for(var p=0;p<PERIODS.length;p++){
+    body+='<tr><td class="time"><b>'+PERIODS[p].id+'</b>'+PERIODS[p].s+'-'+PERIODS[p].e+'</td>';
+    for(var w=0;w<7;w++){
+      if(covered[w]>0){covered[w]--;continue;}
+      var c=state.courses.find(function(x){return x.w===w&&x.s===PERIODS[p].id;});
+      if(c){
+        var rs=c.e-c.s+1;covered[w]=rs-1;
+        body+='<td class="cell" rowspan="'+rs+'"><div class="course" data-ci="'+state.courses.indexOf(c)+'" style="background:'+COLORS[c.c]+';color:#fff"><div class="nm">'+esc(c.name)+'</div><div class="rm">'+esc(c.room)+'</div></div></td>';
+      }else body+='<td class="cell"></td>';
+    }
+    body+='</tr>';
+  }
+  $id('ttBody').innerHTML=body;
+}
+
+/* ===== 签到 ===== */
+var curFilter='all';
+function renderSign(){
+  var sel=$id('signCourse'),prev=sel.value;
+  sel.innerHTML='';
+  state.courses.forEach(function(c){
+    var o=document.createElement('option');o.value=c.name;
+    o.textContent=DAYS[c.w]+' '+c.s+'-'+c.e+'节 '+c.name;
+    sel.appendChild(o);
+  });
+  if(prev&&state.courses.some(function(c){return c.name===prev;}))sel.value=prev;
+  renderSignList();
+}
+function renderSignList(){
+  var rec=state.records[nowKey()]||{};
+  var st={attend:0,leave:0,absent:0,none:0};
+  state.students.forEach(function(n){var k=rec[n]||'none';st[k]=(st[k]||0)+1;});
+  $id('stTotal').textContent=state.students.length;
+  $id('stAttend').textContent=st.attend;$id('stLeave').textContent=st.leave;
+  $id('stAbsent').textContent=st.absent;$id('stNone').textContent=st.none;
+  var list=$id('signList');
+  var shown=state.students.filter(function(n){
+    if(curFilter==='all')return true;
+    return (rec[n]||'none')===curFilter;
+  });
+  if(!shown.length){list.innerHTML='<li class="empty" style="grid-column:1/-1">当前筛选下暂无学生，点上方「全部」查看</li>';return;}
+  var tag={'attend':'出勤','leave':'请假','absent':'缺勤','none':'未签到'};
+  list.innerHTML=shown.map(function(n){
+    var k=rec[n]||'none';
+    return '<li class="'+k+'" data-name="'+esc(n)+'" role="button" tabindex="0"><span class="av">'+esc(n.charAt(0))+'</span><span class="sname">'+esc(n)+'</span><span class="stag">'+tag[k]+'</span></li>';
+  }).join('');
+}
+function cycle(name){
+  var rec=state.records[nowKey()]=state.records[nowKey()]||{};
+  var order=['none','attend','leave','absent'];
+  rec[name]=order[(order.indexOf(rec[name]||'none')+1)%4];
+  save();renderSignList();
+}
+
+/* ===== 名单 ===== */
+function renderMember(){
+  var list=$id('memberList');
+  $id('memberCount').textContent='共 '+state.students.length+' 人';
+  if(!state.students.length){list.innerHTML='<li class="empty">暂无学生，点右上角新增</li>';return;}
+  list.innerHTML=state.students.map(function(n,i){
+    return '<li><span class="no">'+(i+1)+'</span><span class="nm">'+esc(n)+'</span><button class="del" data-del="'+esc(n)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 13h8l1-13M10 11v5M14 11v5"/></svg></button></li>';
+  }).join('');
+}
+
+/* ===== modal ===== */
+var mcb=null;
+function openM(title,body,okText,okFn){
+  $id('mTitle').textContent=title;$id('mBody').innerHTML=body;
+  $id('mOk').textContent=okText||'保存';mcb=okFn;
+  $id('modal').classList.add('show');
+}
+function closeM(){$id('modal').classList.remove('show');mcb=null;}
+$id('mCancel').addEventListener('click',closeM);
+$id('mOk').addEventListener('click',function(){if(mcb){var f=mcb;mcb=null;f();}});
+$id('modal').addEventListener('click',function(e){if(e.target.id==='modal')closeM();});
+
+/* 课程表单 */
+function courseForm(c){
+  c=c||{name:'',room:'',w:0,s:1,e:1,c:0};
+  var wOpt=DAYS.map(function(d,i){return '<option value="'+i+'"'+(i===c.w?' selected':'')+'>'+d+'</option>';}).join('');
+  var pOpt=PERIODS.map(function(p){return '<option value="'+p.id+'"'+(p.id===c.s?' selected':'')+'>第'+p.id+'节 '+p.s+'</option>';}).join('');
+  var pOpt2=PERIODS.map(function(p){return '<option value="'+p.id+'"'+(p.id===c.e?' selected':'')+'>第'+p.id+'节 '+p.s+'</option>';}).join('');
+  var sw=COLORS.map(function(col,i){return '<button type="button" data-ci="'+i+'" style="width:30px;height:30px;border-radius:8px;background:'+col+';border:2px solid '+(i===c.c?'#182230':'transparent')+'"></button>';}).join('');
+  return {body:'<div class="fg"><label>课程名称</label><input id="fName" value="'+esc(c.name)+'"></div>'
+    +'<div class="fg"><label>教室</label><input id="fRoom" value="'+esc(c.room)+'"></div>'
+    +'<div class="row"><div class="fg"><label>星期</label><select id="fW">'+wOpt+'</select></div>'
+    +'<div class="fg"><label>起始节</label><select id="fS">'+pOpt+'</select></div>'
+    +'<div class="fg"><label>结束节</label><select id="fE">'+pOpt2+'</select></div></div>'
+    +'<div class="fg"><label>颜色</label><div style="display:flex;gap:8px;flex-wrap:wrap">'+sw+'</div></div>',idx:null};
+}
+$id('btnAddCourse').addEventListener('click',function(){
+  var f=courseForm(null);
+  openM('添加课程',f.body,'保存',function(){
+    var name=$id('fName').value.trim();if(!name){alert('请填写课程名称');return;}
+    var s=parseInt($id('fS').value,10),e=parseInt($id('fE').value,10);if(e<s){alert('结束节不能早于开始节');return;}
+    state.courses.push({name:name,room:$id('fRoom').value.trim(),w:parseInt($id('fW').value,10),s:s,e:e,c:0});
+    save();renderTimetable();
+  });
+});
+$id('ttBody').addEventListener('click',function(e){
+  var c=e.target.closest('.course');if(!c)return;
+  var i=parseInt(c.dataset.ci,10),co=state.courses[i];if(!co)return;
+  var f=courseForm(co);
+  openM('编辑课程',f.body,'保存',function(){
+    co.name=$id('fName').value.trim()||co.name;co.room=$id('fRoom').value.trim();
+    co.w=parseInt($id('fW').value,10);co.s=parseInt($id('fS').value,10);co.e=parseInt($id('fE').value,10);
+    if(co.e<co.s)co.e=co.s;
+    save();renderTimetable();
+  });
+});
+
+/* 学生 */
+$id('btnAddStudent').addEventListener('click',function(){
+  openM('新增学生','<div class="fg"><label>学生姓名</label><input id="fSName" placeholder="多个姓名用顿号、逗号或空格分隔"></div>','保存',function(){
+    var raw=$id('fSName').value.trim();if(!raw){alert('请输入姓名');return;}
+    var arr=raw.split(/[、,，;\s]+/).filter(Boolean);
+    arr.forEach(function(n){state.students.push(n);});
+    save();renderMember();
+  });
+});
+$id('memberList').addEventListener('click',function(e){
+  var del=e.target.closest('.del');if(!del)return;
+  var name=del.dataset.del;
+  if(confirm('确定将「'+name+'」移出名单吗？')){state.students=state.students.filter(function(n){return n!==name;});save();renderMember();}
+});
+
+/* 签到事件 */
+$id('signCourse').addEventListener('change',renderSignList);
+$id('signDate').addEventListener('change',renderSignList);
+$id('signList').addEventListener('click',function(e){var li=e.target.closest('li[data-name]');if(li)cycle(li.dataset.name);});
+$id('signList').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){var li=e.target.closest('li[data-name]');if(li){e.preventDefault();cycle(li.dataset.name);}}});
+$id('filters').addEventListener('click',function(e){
+  var f=e.target.closest('.fc');if(!f)return;
+  curFilter=f.dataset.f;
+  this.querySelectorAll('.fc').forEach(function(b){b.dataset.on=(b===f)?'1':'0';});
+  renderSignList();
+});
+$id('btnAll').addEventListener('click',function(){
+  var rec=state.records[nowKey()]=state.records[nowKey()]||{};
+  state.students.forEach(function(n){rec[n]='attend';});
+  save();renderSignList();
+});
+$id('btnClear').addEventListener('click',function(){
+  if(confirm('清除本节所有签到状态？')){delete state.records[nowKey()];save();renderSignList();}
+});
+$id('btnReset').addEventListener('click',function(){
+  if(confirm('恢复示例数据？当前所有改动会被覆盖。')){state={courses:sampleCourses(),students:sampleStudents(),records:{}};save();renderTimetable();renderMember();$id('signDate').value=fmtDate(new Date());renderSign();}
+});
+
+/* ===== 路由 ===== */
+var tabs=document.querySelectorAll('.tab');
+tabs.forEach(function(t){t.addEventListener('click',function(){show(t.dataset.tab);});});
+function show(name){
+  tabs.forEach(function(t){t.classList.toggle('active',t.dataset.tab===name);});
+  ['timetable','sign','member'].forEach(function(n){$id('p-'+n).classList.toggle('active',n===name);});
+  if(name==='sign')renderSign();
+  if(name==='member')renderMember();
+  if(name==='timetable')renderTimetable();
+}
+
+/* ===== init ===== */
+state=load();
+$id('signDate').value=fmtDate(new Date());
+renderTimetable();
+renderMember();
+show('timetable');
+})();
+</script>
+</body>
+</html>

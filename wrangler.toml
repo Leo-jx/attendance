@@ -1,0 +1,14 @@
+name = "attendance"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Cloudflare D1 数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "attendance"
+database_id = "201c2096-e949-4d93-a193-a9028f49f899"
+
+# 静态资源（前端）托管：同一 Worker 同时处理 /api/* 与静态文件
+[assets]
+directory = "public"
+binding = "ASSETS"

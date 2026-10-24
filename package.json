@@ -1,0 +1,14 @@
+{
+  "name": "attendance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "云计算01班考勤系统（Cloudflare Worker + D1 + 静态前端）",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "migrate": "wrangler d1 execute attendance --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.99.0"
+  }
+}
